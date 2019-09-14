@@ -7,24 +7,30 @@ Class NaturalBase
 
 	aCommandsStack = []
 	nCommandID = 0
+	nCommandsCount = 0
+
+	aClassMethods = []
+	aBraceMethods = []
 
 	func BraceStart
 		aMethods = methods(self)	
 		for cMethod in aMethods {
 			if left(cMethod,14) = "addattributes_" {
-				eval(cMethod+"()")
+				call cMethod()
 			}
 		}
-
-	func BraceExprEval Value
-		aMethods = methods(self)	
-		for cMethod in aMethods {
-			if left(cMethod,14) = "braceexpreval_" {
-				if isNumber(Value) {
-					eval(cMethod+"("+Value+")")
-				elseif isString(Value) 
-					eval(cMethod+"('"+Value+"')")
+		# Prepare lists for Class Methods and Brace Methods
+			aClassMethods = methods(self)	
+			for cMethod in aClassMethods {
+				if left(cMethod,14) = "braceexpreval_" {
+					aBraceMethods + cMethod
 				}
+			}
+	
+	func BraceExprEval Value
+		if isNumber(Value) or isString(Value) {
+			for cMethod in aBraceMethods {
+				call cMethod(Value)
 			}
 		}
 
@@ -33,19 +39,21 @@ Class NaturalBase
 	func StartCommand 
 		nCommandID++
 		aCommandsStack + [nCommandID,[/*command data*/]] 
+		nCommandsCount++
 		return nCommandID
 
 	func EndCommand 
-		del(aCommandsStack,len(aCommandsStack))
+		del(aCommandsStack,nCommandsCount)
+		nCommandsCount--
 
 	func CommandID
-		return aCommandsStack[len(acommandsStack)][1]
+		return aCommandsStack[nCommandsCount][1]
 
 	func CommandData
-		return aCommandsStack[len(acommandsStack)][2]
+		return aCommandsStack[nCommandsCount][2]
 
 	func IsCommand
-		return len(aCommandsStack)
+		return nCommandsCount
 
 	func CommandOutput vValue
 		BraceExprEval(vValue)
@@ -55,4 +63,4 @@ Class NaturalBase
 		BraceExprEval(vValue)
 
 	func Expr nIndex
-		return CommandData()[:aExpr][nIndex]
+		return aCommandsStack[nCommandsCount][2][:aExpr][nIndex]
